@@ -1,8 +1,8 @@
 import { Play } from '@phosphor-icons/react'
-
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as zod from 'zod'
+import { useState } from 'react'
 
 import {
   CountdownContainer,
@@ -15,16 +15,25 @@ import {
 } from './styles'
 
 const newCycleFormValidationSchema = zod.object({
-  task: zod.string().min(1, 'Informe o nome do projeto'),
+  task: zod.string().min(1, 'Informe a tarefa'),
   minutesAmount: zod
     .number()
-    .min(5, 'O ciclo precisa ser de no mínimo 5 minutos')
-    .max(60, 'O ciclo precisa ser de no máximo 60 minutos'),
+    .min(5, 'O ciclo precisa ser de no mínimo 5 minutos.')
+    .max(60, 'O ciclo precisa ser de no máximo 60 minutos.'),
 })
 
 type NewCycleFormData = zod.infer<typeof newCycleFormValidationSchema>
 
+interface Cycle {
+  id: string
+  task: string
+  minutesAmount: number
+}
+
 export function Home() {
+  const [cycles, setCycles] = useState<Cycle[]>([])
+  const [activeCycleId, setActiveCycleId] = useState<string | null>(null)
+
   const { register, handleSubmit, watch, reset } = useForm<NewCycleFormData>({
     resolver: zodResolver(newCycleFormValidationSchema),
     defaultValues: {
@@ -32,14 +41,28 @@ export function Home() {
       minutesAmount: 0,
     },
   })
-  const task = watch('task')
-
-  const isSubmitDisable = !task
 
   function handleCreateNewCycle(data: NewCycleFormData) {
-    console.log(data)
+    const id = String(new Date().getTime())
+
+    const newCycle: Cycle = {
+      id,
+      task: data.task,
+      minutesAmount: data.minutesAmount,
+    }
+
+    setCycles((state) => [...state, newCycle])
+    setActiveCycleId(id)
+
     reset()
   }
+
+  const activeCycle = cycles.find((cycle) => cycle.id === activeCycleId)
+
+  console.log(activeCycle)
+
+  const task = watch('task')
+  const isSubmitDisable = !task
 
   return (
     <HomeContainer>
@@ -48,8 +71,8 @@ export function Home() {
           <label htmlFor="task">Vou trabalhar em</label>
           <TaskInput
             id="task"
-            placeholder="Dê um nome para o seu projeto"
             list="task-suggestions"
+            placeholder="Dê um nome para o seu projeto"
             {...register('task')}
           />
 
@@ -57,6 +80,7 @@ export function Home() {
             <option value="Projeto 1" />
             <option value="Projeto 2" />
             <option value="Projeto 3" />
+            <option value="Banana" />
           </datalist>
 
           <label htmlFor="minutesAmount">durante</label>
@@ -64,9 +88,9 @@ export function Home() {
             type="number"
             id="minutesAmount"
             placeholder="00"
+            step={5}
             min={5}
             max={60}
-            step={5}
             {...register('minutesAmount', { valueAsNumber: true })}
           />
 
